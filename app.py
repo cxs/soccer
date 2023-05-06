@@ -77,7 +77,6 @@ def display_league_logo(league_csv):
     else:
         st.warning(f'Logo not found for {league_csv}. Please check the "league_logos" dictionary.')
 
-
 # Main app
 def main():
     st.set_page_config(page_title='Soccer Transfer Market', layout='wide')
@@ -90,22 +89,44 @@ def main():
         unique_seasons = sorted(df['season'].unique(), reverse=True)
         unique_leagues = df['league_name'].unique()
 
-        # unique_clubs = pd.concat([df['club_name'], df['club_involved_name']]).drop_duplicates().dropna().sort_values().reset_index(drop=True)
-        # for club_name in unique_clubs:
-        #     print(club_name)
-
-
         # Dropdown selectors for 'season' and 'league_name'
         selected_season = st.sidebar.selectbox('Select season', unique_seasons, index=0)
         selected_league = st.sidebar.selectbox('Select league', unique_leagues)
 
+        # Dropdown selector for 'club_name'
+        unique_clubs = sorted(df['club_name'].unique())
+        selected_club = st.sidebar.selectbox('Select club', ['all-clubs'] + list(unique_clubs), index=0)
+
         # Display the selected league's logo
         display_league_logo(selected_league)
 
+        # Filter data for the selected 'season', 'league_name', and 'club_name' if not 'all-clubs'
+        league_data = df[(df['season'] == selected_season) & (df['league_name'] == selected_league)]
+        if selected_club != 'all-clubs':
+            league_data = league_data[league_data['club_name'] == selected_club]
+
+        # Rename columns for display
+        display_columns = {
+            'player_name': 'Player Name',
+            'age': 'Age',
+            'position': 'Position',
+            'fee': 'Transfer Fee',
+            'transfer_period': 'Transfer Window',
+            'club_name': 'Club Name',
+            'club_involved_name': 'Club Involved',
+            'fee_cleaned': 'Transfer Fee (M)',
+            'transfer_movement': 'Transfer Movement',
+            'league_name': 'League Name',
+            'season': 'Season',
+            'year': 'Year',
+            'country': 'Country'
+        }
+        league_data_display = league_data
+
+        
         # Display data for the selected 'season' and 'league_name'
         st.header(f'Data for {selected_league} in season {selected_season}')
-        league_data = df[(df['season'] == selected_season) & (df['league_name'] == selected_league)]
-        st.write(league_data)
+        st.write(league_data_display.rename(columns=display_columns))
 
         # Display top 10 foreign clubs for incoming and outgoing transfers side by side
         st.header('Top 10 Foreign Clubs')
@@ -126,5 +147,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-           
