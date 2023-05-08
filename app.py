@@ -104,6 +104,38 @@ def get_net_flow(df):
     ).add_prefix('To:').reset_index()
     return net_flow
 
+def get_current_roster(df, club_name, selected_season):
+    # Filter transfers for the selected club and seasons up to the selected season
+    selected_year = int(selected_season.split('/')[0])
+    club_transfers = df[(df['Club Name'] == club_name) & (df['Year'] <= selected_year)]
+
+    # Get all incoming transfers for the club
+    incoming_transfers = club_transfers[club_transfers['Transfer Movement'] == 'in']
+    
+    # Get all outgoing transfers for the club
+    outgoing_transfers = club_transfers[club_transfers['Transfer Movement'] == 'out']
+
+    # Get the latest incoming transfer for each player
+    latest_incoming_transfers = incoming_transfers.loc[incoming_transfers.groupby('Player Name')['Year'].idxmax()]
+
+    # Get the latest outgoing transfer for each player
+    latest_outgoing_transfers = outgoing_transfers.loc[outgoing_transfers.groupby('Player Name')['Year'].idxmax()]
+
+    # Get the current roster by removing the players who have transferred out after their last incoming transfer
+    current_roster = pd.merge(latest_incoming_transfers, latest_outgoing_transfers, on='Player Name', how='left', suffixes=('_in', '_out'))
+    current_roster = current_roster[current_roster['Year_out'].isnull() | (current_roster['Year_in'] > current_roster['Year_out'])]
+    current_roster['Last Transfer Season'] = current_roster['Season_in'].apply(lambda x: str(int(x[:4])))
+  
+    # Calculate the years stayed at the club
+    current_roster['Years Stayed'] = selected_year - current_roster['Year_in']
+
+    # Filter out players who have stayed for more than 24 years (Maldini, Totti, etc.)
+    current_roster = current_roster[current_roster['Years Stayed'] <= 24]
+
+    # Select relevant columns and rename them
+    current_roster = current_roster[['Player Name', 'Age_in','Position_in', 'Transfer Fee (M)_in', 'Last Transfer Season', 'Club Involved_in']]
+    return current_roster
+
 
 # Main app
 def main():
@@ -175,6 +207,13 @@ def main():
              club_summary = get_club_summary(league_data)
              st.header(f'Club Summary for {selected_league} in season {selected_season}')
              st.write(club_summary)
+        else:
+            current_roster = get_current_roster(df, selected_club, selected_season)
+            total_transfer_fee = current_roster['Transfer Fee (M)_in'].sum()
+            st.header(f'Current Roster for {selected_club} (Fees: {total_transfer_fee}M)')
+            st.write(current_roster.reset_index(drop=True))
+                        
+
 
         # Display the top 4 incoming transfers
         st.markdown(f'### Top Transfers:')
