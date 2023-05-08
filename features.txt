@@ -1,5 +1,3 @@
-1.) A list of the top 4 incoming transfers for the season and selected league and club, including Player Name, Club Involved and Cleaned fee. This list is to be on one line and separated by comma. The player name should be in blue color.
-2.) Same as above for outgoing transfers.
 3.) if all-clubs is selected for a league, please add:
         - a table of club_name to total transfer_volume, number or transfers, transfer profit as the sum(outgoing) - sum(incoming), average transfer age, 
            number of time 'free transfer' is mentioned in the 'Transfer fee' field, 

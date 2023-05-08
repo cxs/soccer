@@ -12,7 +12,6 @@ def load_dataframes_from_directory(directory):
             dataframes.append(pd.read_csv(os.path.join(directory, file)))
     return pd.concat(dataframes, ignore_index=True)
 
-
 #matches club names if all words in club1 are in club2 in the same order
 def match_words(club1, club2):
     #words
@@ -39,6 +38,11 @@ def get_top_10_transfers(df, league_name):
     # Calculate top 10 transfers
     return df.groupby('Player Name')['Transfer Fee (M)'].sum().nlargest(10)
 
+def get_top_4_incoming_transfers(df, league_name, club_name):
+    incoming_transfers = df[(df['Transfer Movement'] == 'in') & (df['League Name'] == league_name) & (df['Club Name'] == club_name)]
+    top_4_incoming_transfers = incoming_transfers.nlargest(4, 'Transfer Fee (M)')
+    return top_4_incoming_transfers[['Player Name', 'Club Involved', 'Transfer Fee (M)']]
+
 def display_league_logo(league_csv):
     
     league_logos = {
@@ -53,7 +57,7 @@ def display_league_logo(league_csv):
     'Liga Nos': 'league_logos/liga_nos.png',
     }
 
-    logos_dir = 'league_logos'
+    logos_dir =   'league_logos'
     logo_url = league_logos.get(league_csv)
 
     if logo_url:
@@ -99,15 +103,32 @@ def main():
         
         # Display the selected league's logo
         display_league_logo(selected_league)
-
-        # Filter data for the selected 'season', 'league_name', and 'club_name' if not 'all-clubs'
+         # Filter data for the selected 'season', 'league_name', and 'club_name' if not 'all-clubs'
         league_data = df[(df['Season'] == selected_season) & (df['League Name'] == selected_league)]
+
         display_header = selected_league
         if selected_club != 'all clubs':
             display_header = selected_club
             league_data = league_data[league_data['Club Name'] == selected_club]
-        
-        # Display data for the selected 'season' and 'league_name'
+        # Display the top 4 incoming transfers for the selected league and club
+        #if selected_club != 'all clubs':
+        top_4_incoming_transfers = league_data[league_data['Transfer Movement'] == 'in'].nlargest(4, 'Transfer Fee (M)')
+        top_4_outgoing_transfers = league_data[league_data['Transfer Movement'] == 'out'].nlargest(4, 'Transfer Fee (M)')
+
+        # Format the top 4 incoming transfers as a comma-separated string
+        top_4_incoming_transfers_str = ', '.join(
+            [f'<span style="color:blue">{player}</span> from {club} ({fee}M)' for player, club, fee in
+                top_4_incoming_transfers[['Player Name', 'Club Involved', 'Transfer Fee (M)']].itertuples(index=False)])
+        top_4_outgoing_transfers_str = ', '.join([f'<span style="color:blue">{player}</span> to {club} ({fee}M)' for player, club, fee in
+                top_4_outgoing_transfers[['Player Name', 'Club Involved', 'Transfer Fee (M)']].itertuples(index=False)])
+
+
+
+        # Display the top 4 incoming transfers
+        st.markdown(f'### Top Transfers:')
+        st.markdown(f'In: {top_4_incoming_transfers_str}', unsafe_allow_html=True)
+        st.markdown(f'Out: {top_4_outgoing_transfers_str}',unsafe_allow_html=True)
+    # Display data for the selected 'season' and 'league_name'
         st.header(f'Transfers for {display_header} in season {selected_season}')
         st.write(league_data)
 
@@ -128,9 +149,11 @@ def main():
         with col3:
             st.subheader('Players')
             st.write(players)
-
+ 
     else:
         st.error(f'Data directory "{transfers_data_dir}" not found. Please check the data directory.')
 
 if __name__ == '__main__':
     main()
+
+
