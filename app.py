@@ -47,6 +47,7 @@ def display_league_logo(league_csv):
     'Eredivisie': 'league_logos/ere.jpg',
     'Ligue 1': 'league_logos/ligue-1-logo.png',
     'Liga Nos': 'league_logos/liga_nos.png',
+    'all leagues': 'league_logos/all_leagues.png',
     }
 
     logos_dir =   'league_logos'
@@ -89,6 +90,21 @@ def get_club_summary(df):
 
     return club_summary
 
+def get_net_flow(df):
+    # Filter out transfers with no league involved
+    df = df[(df['Club Involved'].notna()) & (df['Involved League'].notna())]
+
+    # Create a pivot table with the sum of transfer fees between leagues
+    net_flow = df.pivot_table(
+        index='League Name',
+        columns='Involved League',
+        values='Transfer Fee (M)',
+        aggfunc='sum',
+        fill_value=0
+    ).add_prefix('To:').reset_index()
+    return net_flow
+
+
 # Main app
 def main():
     st.set_page_config(page_title='Soccer Transfer Market', layout='wide')
@@ -111,11 +127,13 @@ def main():
             'league_name': 'League Name',
             'season': 'Season',
             'year': 'Year',
-            'country': 'Country'
+            'country': 'Country',
+            'club_involved_cleaned': 'Parent Club Involved',
+            'involved_league': 'Involved League'
         }
         df.rename(columns=display_columns, inplace=True)
         unique_seasons = sorted(df['Season'].unique(), reverse=True)
-        unique_leagues = df['League Name'].unique()
+        unique_leagues = ['all leagues'] + list(df['League Name'].unique())
 
          # Dropdown selectors for 'season' and 'league_name'
         selected_season = st.sidebar.selectbox('Select season', unique_seasons, index=0)
@@ -125,11 +143,16 @@ def main():
         unique_club_names = df[(df['Season'] == selected_season) & (df['League Name'] == selected_league)]['Club Name'].unique()
         selected_club = st.sidebar.selectbox('Select club', ['all clubs'] + list(unique_club_names))
     
-        # Display the selected league's logo
-        display_league_logo(selected_league)
          # Filter data for the selected 'season', 'league_name', and 'club_name' if not 'all-clubs'
         league_data = df[(df['Season'] == selected_season) & (df['League Name'] == selected_league)]
+        display_league_logo(selected_league)
 
+        # Lastly, add the following lines inside the main() function after the line "st.write(league_data)":
+        if selected_league == 'all leagues':
+            st.header('Net Flow between European Leagues')
+            net_flow = get_net_flow(df[df['Season'] == selected_season])
+            st.write(net_flow)
+            return
         display_header = selected_league
         if selected_club != 'all clubs':
             display_header = selected_club

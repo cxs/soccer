@@ -1,6 +1,6 @@
-4.) For each club compute a table of the current roster, which are all players who are transfered into the club during any season up until the current season, but have not transferred out from the club.
+1.) For each club compute a table of the current roster, which are all players who are transfered into the club during any season up until the current season, but have not transferred out from the club.
     Include Player name, last transfer season, position, last transfer amount, and the CLub involved in the transfer.
-5.) Add a fourth drop down called Player and default to 'all-players'. The possible values for the drop down are all players at the club's roster or the all clubs rosters (if all-clubs is selected).
+2.) Add a fourth drop down called Player and default to 'all-players'. The possible values for the drop down are all players at the club's roster or the all clubs rosters (if all-clubs is selected).
     if a specific player is selected, include the stats for their current club and set the club dropdown to that value.
     Add the following player data in a table, called the player history.
     All transfers of all seasons before and after. 
@@ -11,9 +11,6 @@
     NUmber of clubs the player played at.
     A comma separated list of different positions the player played.
     Most recent positions the player played.
-6.) If all-leagues is selected pivot screen to a net flow screen between europes leagues.
-    - create a map from club to league
-    - a matrix view of net flow between each league, where net flow is the sum of transfer_volume between any club of the league.
 
 
 
