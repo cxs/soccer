@@ -4,14 +4,6 @@ import streamlit as st
 import plotly.express as px
 from PIL import Image
 
-# Function to load all CSV files in the specified directory
-def load_dataframes_from_directory(directory):
-    dataframes = []
-    for file in os.listdir(directory):
-        if file.endswith('.csv'):
-            dataframes.append(pd.read_csv(os.path.join(directory, file)))
-    return pd.concat(dataframes, ignore_index=True)
-
 #matches club names if all words in club1 are in club2 in the same order
 def match_words(club1, club2):
     #words
@@ -49,7 +41,7 @@ def display_league_logo(league_csv):
     '1 Bundesliga': 'league_logos/1_Bundesliga.png',
     'Championship': 'league_logos/Premier_League_Logo.svg.png',
     'Serie A': 'league_logos/Logo_Lega_Serie_A.webp',
-    'Premier Liga': 'league_logos/la_liga.png',
+    'Premier Liga': 'league_logos/premier_liga.png',
     'Primera Division': 'league_logos/la_liga.png',
     'Premier League': 'league_logos/Premier_League_Logo.svg.png',
     'Eredivisie': 'league_logos/ere.jpg',
@@ -73,7 +65,7 @@ def get_club_summary(df):
 
     club_summary = summary_df.groupby(['Club Name']).agg(
         total_transfer_volume=('Transfer Fee (M)', 'sum'),
-        number_of_transfers=('Transfer Fee (M)', 'count'),
+        number_of_transfers=('Player Name', 'count'),
         transfer_profit=('Transfer Fee (M)', lambda x: x[df['Transfer Movement'] == 'out'].sum() - x[df['Transfer Movement'] == 'in'].sum()),
         median_transfer_age=('Age', 'median'),
         free_transfers=('Free Transfer', 'sum'),
@@ -97,16 +89,15 @@ def get_club_summary(df):
 
     return club_summary
 
-
 # Main app
 def main():
     st.set_page_config(page_title='Soccer Transfer Market', layout='wide')
     st.title('Soccer Transfer Market')
 
     # Load data
-    transfers_data_dir = 'transfers/data'
-    if os.path.exists(transfers_data_dir):
-        df = load_dataframes_from_directory(transfers_data_dir)
+    transfers_data = 'combined_transfers_data.csv.gz'
+    if os.path.exists(transfers_data):
+        df = pd.read_csv(transfers_data, compression='gzip')
         display_columns = {
             'player_name': 'Player Name',
             'age': 'Age',
@@ -126,14 +117,14 @@ def main():
         unique_seasons = sorted(df['Season'].unique(), reverse=True)
         unique_leagues = df['League Name'].unique()
 
-        # Dropdown selectors for 'season' and 'league_name'
+         # Dropdown selectors for 'season' and 'league_name'
         selected_season = st.sidebar.selectbox('Select season', unique_seasons, index=0)
-        selected_league = st.sidebar.selectbox('Select league', unique_leagues)
+        selected_league = st.sidebar.selectbox('Select league', unique_leagues, index=0)
 
         # Get unique club names based on the selected season and league
         unique_club_names = df[(df['Season'] == selected_season) & (df['League Name'] == selected_league)]['Club Name'].unique()
         selected_club = st.sidebar.selectbox('Select club', ['all clubs'] + list(unique_club_names))
-        
+    
         # Display the selected league's logo
         display_league_logo(selected_league)
          # Filter data for the selected 'season', 'league_name', and 'club_name' if not 'all-clubs'
@@ -189,7 +180,7 @@ def main():
             st.write(players)
  
     else:
-        st.error(f'Data directory "{transfers_data_dir}" not found. Please check the data directory.')
+        st.error(f'Data file "{transfers_data}" not found. Please check the root directory.')
 
 if __name__ == '__main__':
     main()
