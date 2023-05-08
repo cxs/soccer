@@ -23,7 +23,7 @@ def main():
     print(f"\nFeature {selected_feature + 1}:\n{features[selected_feature]}\n")
     print(f"\n------------------------------------------------------------ \n")
     print(f"""I want you to read the following code and rewrite it to include the feature mentioned below.
-      Just add the feature to the code, don't remove anything. Respond with formatted rewritten code.\n""")
+      Just add the feature to the code, don't remove anything. Respond with formatted  parts of the code which have changed.\n""")
     print(f"\nCode:\n{code}\n")
     print(f"\nNew feature: ADD {features[selected_feature]}\n")
     print (f"\n------------------------------------------------------------ \n")

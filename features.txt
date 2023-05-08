@@ -1,7 +1,3 @@
-3.) if all-clubs is selected for a league, please add:
-        - a table of club_name to total transfer_volume, number or transfers, transfer profit as the sum(outgoing) - sum(incoming), average transfer age, 
-           number of time 'free transfer' is mentioned in the 'Transfer fee' field, 
-           number of time 'loan' or 'Loan' is mentioned in the 'Transfer fee' field
 4.) For each club compute a table of the current roster, which are all players who are transfered into the club during any season before, but have not transferred out from the club.
     Include Player name, last transfer season, position, last transfer amount, and the CLub involved in the transfer.
 5.) Add a fourth drop down called Player and default to 'all-players'. The possible values for the drop down are all players at the club's roster or the all clubs rosters (if all-clubs is selected).

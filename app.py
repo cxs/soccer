@@ -65,6 +65,39 @@ def display_league_logo(league_csv):
     else:
         st.warning(f'Logo not found for {league_csv}. Please check the "league_logos" dictionary.')
 
+def get_club_summary(df):
+    summary_df = df.copy()   
+    summary_df['Free Transfer'] = summary_df['Transfer Fee'].apply(lambda fee: 1 if 'free' in str(fee).lower() else 0)
+    summary_df['Loan Transfer'] = summary_df['Transfer Fee'].apply(lambda fee: 1 if 'loan' in str(fee).lower() else 0)
+    summary_df['Transfer Fee'] = summary_df['Transfer Fee (M)']
+
+    club_summary = summary_df.groupby(['Club Name']).agg(
+        total_transfer_volume=('Transfer Fee (M)', 'sum'),
+        number_of_transfers=('Transfer Fee (M)', 'count'),
+        transfer_profit=('Transfer Fee (M)', lambda x: x[df['Transfer Movement'] == 'out'].sum() - x[df['Transfer Movement'] == 'in'].sum()),
+        median_transfer_age=('Age', 'median'),
+        free_transfers=('Free Transfer', 'sum'),
+        loan_transfers=('Loan Transfer', 'sum')
+    ).reset_index()
+
+    # Sort the table by total_transfer_volume
+    club_summary.sort_values(by='total_transfer_volume', ascending=False, inplace=True)
+
+    # Rename the columns nicely
+    nice_column_names = {
+        'Club Name': 'Club Name',
+        'total_transfer_volume': 'Transfer Volume (M)',
+        'number_of_transfers': 'Number of Transfers',
+        'transfer_profit': 'Transfer Profit (M)',
+        'median_transfer_age': 'Median Transfer Age',
+        'free_transfers': 'Free Transfers',
+        'loan_transfers': 'Loan Transfers'
+    }
+    club_summary.rename(columns=nice_column_names, inplace=True)
+
+    return club_summary
+
+
 # Main app
 def main():
     st.set_page_config(page_title='Soccer Transfer Market', layout='wide')
@@ -110,6 +143,7 @@ def main():
         if selected_club != 'all clubs':
             display_header = selected_club
             league_data = league_data[league_data['Club Name'] == selected_club]
+        
         # Display the top 4 incoming transfers for the selected league and club
         #if selected_club != 'all clubs':
         top_4_incoming_transfers = league_data[league_data['Transfer Movement'] == 'in'].nlargest(4, 'Transfer Fee (M)')
@@ -123,12 +157,16 @@ def main():
                 top_4_outgoing_transfers[['Player Name', 'Club Involved', 'Transfer Fee (M)']].itertuples(index=False)])
 
 
+        if selected_club == 'all clubs':
+             club_summary = get_club_summary(league_data)
+             st.header(f'Club Summary for {selected_league} in season {selected_season}')
+             st.write(club_summary)
 
         # Display the top 4 incoming transfers
         st.markdown(f'### Top Transfers:')
         st.markdown(f'In: {top_4_incoming_transfers_str}', unsafe_allow_html=True)
         st.markdown(f'Out: {top_4_outgoing_transfers_str}',unsafe_allow_html=True)
-    # Display data for the selected 'season' and 'league_name'
+        # Display data for the selected 'season' and 'league_name'
         st.header(f'Transfers for {display_header} in season {selected_season}')
         st.write(league_data)
 
