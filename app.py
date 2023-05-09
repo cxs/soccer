@@ -136,6 +136,41 @@ def get_current_roster(df, club_name, selected_season):
     current_roster = current_roster[['Player Name', 'Age_in','Position_in', 'Transfer Fee (M)_in', 'Last Transfer Season', 'Club Involved_in']]
     return current_roster
 
+def get_player_history(df, player_name):
+    player_history = df[df['Player Name'] == player_name].sort_values('Year', ascending=False)
+    
+    outgoing_transfers = player_history[player_history['Transfer Movement'] == 'out'].sort_values('Year', ascending=True)
+    transfer_fee_differences = outgoing_transfers['Transfer Fee (M)'].diff().dropna()
+    net_transfer_volume = transfer_fee_differences.sum()
+
+    player_data = {
+        'total_transfer_volume': player_history['Transfer Fee (M)'].sum()/2,
+        'net_transfer_volume': "%5.1d M"%net_transfer_volume,
+        'number_of_transfers': player_history['Transfer Movement'].count(),
+        'average_duration': player_history[player_history['Transfer Window'] == 'Summer']['Year'].diff(-1).sum() + 0.5 * player_history[player_history['Transfer Window'] == 'Winter']['Year'].diff(-1).sum(),
+        'number_of_clubs': player_history['Club Name'].nunique(),
+        'positions': ', '.join(player_history['Position'].unique()),
+        'most_recent_position': player_history.iloc[0]['Position']
+    }
+    nice_column_names = {
+    'total_transfer_volume': 'Total Transfer Volume (M)',
+    'net_transfer_volume': 'Net Transfer Volume (M)',
+    'number_of_transfers': 'Number of Transfers',
+    'average_duration': 'Average Duration (Years)',
+    'number_of_clubs': 'Number of Clubs',
+    'positions': 'Positions',
+    'most_recent_position': 'Most Recent Position'
+    }
+    #Apply nice_column_names to player_data
+    player_data_nice = {nice_column_names[key]: value for key, value in player_data.items()}
+
+    return player_history, player_data_nice
+
+def get_unique_players(df, selected_club='all clubs'):
+    if selected_club == 'all clubs':
+        return ['all players'] + list(df['Player Name'].unique())
+    else:
+        return ['all players'] + list(df[df['Club Name'] == selected_club]['Player Name'].unique())
 
 # Main app
 def main():
@@ -174,10 +209,14 @@ def main():
         # Get unique club names based on the selected season and league
         unique_club_names = df[(df['Season'] == selected_season) & (df['League Name'] == selected_league)]['Club Name'].unique()
         selected_club = st.sidebar.selectbox('Select club', ['all clubs'] + list(unique_club_names))
-    
+        
+
          # Filter data for the selected 'season', 'league_name', and 'club_name' if not 'all-clubs'
         league_data = df[(df['Season'] == selected_season) & (df['League Name'] == selected_league)]
         display_league_logo(selected_league)
+
+        unique_player_names = get_unique_players(league_data, selected_club)
+        selected_player = st.sidebar.selectbox('Select player', unique_player_names)
 
         # Lastly, add the following lines inside the main() function after the line "st.write(league_data)":
         if selected_league == 'all leagues':
@@ -185,6 +224,20 @@ def main():
             net_flow = get_net_flow(df[df['Season'] == selected_season])
             st.write(net_flow)
             return
+
+        if selected_player != 'all players':
+            player_history, player_data = get_player_history(df, selected_player)
+            selected_club = player_history.iloc[0]['Club Name']
+            league_data = league_data[league_data['Club Name'] == selected_club]
+
+            st.header(f'Player History for {selected_player}')
+            st.write(player_history.reset_index(drop=True))
+
+            st.header(f'Player Stats for {selected_player}')
+            st.write(pd.DataFrame.from_dict(player_data, orient='index', columns=['Value']))
+
+
+
         display_header = selected_league
         if selected_club != 'all clubs':
             display_header = selected_club
